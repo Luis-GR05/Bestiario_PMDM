@@ -20,6 +20,8 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -37,14 +39,17 @@ import com.pm2627.p1ev.memory.model.Criatura
 import com.pm2627.p1ev.memory.model.Nivel
 import com.pm2627.p1ev.memory.ui.theme.MemoryTheme
 import com.pm2627.p1ev.memory.ui.theme.Oro
+import com.pm2627.p1ev.memory.ui.theme.Sangre
 
 /**
  * PANTALLA DE INICIO: enseña los niveles y avisa de cuál se ha elegido.
- * No guarda estado: los niveles le llegan desde MemoryApp y el clic sube como evento.
+ * No guarda estado: los niveles y la opción de sonido le llegan desde MemoryApp.
  */
 @Composable
 fun InicioScreen(
     niveles: List<Nivel>,
+    sonidoActivado: Boolean,
+    onCambiarSonido: (Boolean) -> Unit,
     onNivelElegido: (Nivel) -> Unit,
 ) {
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
@@ -68,6 +73,17 @@ fun InicioScreen(
             Spacer(Modifier.height(4.dp))
             niveles.forEach { nivel ->
                 TarjetaNivel(nivel = nivel, onClick = { onNivelElegido(nivel) })
+            }
+            Row(
+                modifier = Modifier.widthIn(max = 480.dp).fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("Sonido", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                Switch(
+                    checked = sonidoActivado,
+                    onCheckedChange = onCambiarSonido,
+                    colors = SwitchDefaults.colors(checkedTrackColor = Sangre, checkedThumbColor = Oro),
+                )
             }
         }
     }
@@ -122,6 +138,6 @@ private fun TarjetaNivel(nivel: Nivel, onClick: () -> Unit) {
 @Composable
 private fun InicioPreview() {
     MemoryTheme {
-        InicioScreen(NivelesRepositorio.nivelesPorDefecto, {})
+        InicioScreen(NivelesRepositorio.nivelesPorDefecto, true, {}, {})
     }
 }

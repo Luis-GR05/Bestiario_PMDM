@@ -77,6 +77,7 @@ class TableroViewModelTest {
             assertEquals(EstadoCarta.EMPAREJADA, vm.estadoDe(b))
             assertEquals(1, vm.uiState.value.movimientos)
             assertEquals(1, vm.uiState.value.parejasEncontradas)
+            assertEquals(TipoJugada.PAREJA, vm.uiState.value.ultimaJugada?.tipo)
         }
     }
 
@@ -123,6 +124,7 @@ class TableroViewModelTest {
             assertTrue(estado.ganada)
             assertEquals(3, estado.movimientos)
             assertEquals(3, estado.parejasEncontradas)
+            assertEquals(TipoJugada.VICTORIA, estado.ultimaJugada?.tipo)
 
             // El tiempo ya no avanza
             val segundos = estado.segundos

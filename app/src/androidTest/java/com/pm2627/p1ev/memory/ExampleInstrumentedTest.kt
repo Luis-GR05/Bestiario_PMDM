@@ -8,7 +8,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Test instrumentado de ejemplo: se ejecuta en un emulador o dispositivo.
+ * Test instrumentado (emulador o dispositivo): la app arranca en la pantalla de inicio.
  */
 @RunWith(AndroidJUnit4::class)
 class ExampleInstrumentedTest {
@@ -16,7 +16,8 @@ class ExampleInstrumentedTest {
     val composeTestRule = createAndroidComposeRule<MainActivity>()
 
     @Test
-    fun greeting_isDisplayed() {
-        composeTestRule.onNodeWithText("Hola Android!").assertExists()
+    fun inicio_muestraTituloYNiveles() {
+        composeTestRule.onNodeWithText("BESTIARIO").assertExists()
+        composeTestRule.onNodeWithText("Aprendiz").assertExists()
     }
 }

@@ -1,0 +1,31 @@
+[
+  {
+    "id": "aprendiz",
+    "nombre": "Aprendiz",
+    "descripcion": "Tres bestias para calentar la memoria",
+    "filas": 3,
+    "columnas": 2
+  },
+  {
+    "id": "cazador",
+    "nombre": "Cazador",
+    "descripcion": "Seis parejas acechan en la niebla",
+    "filas": 4,
+    "columnas": 3
+  },
+  {
+    "id": "maestro",
+    "nombre": "Maestro",
+    "descripcion": "Todo el bestiario: ocho parejas",
+    "filas": 4,
+    "columnas": 4
+  },
+  {
+    "id": "pesadilla",
+    "nombre": "Pesadilla",
+    "descripcion": "Ocho parejas en un parpadeo",
+    "filas": 4,
+    "columnas": 4,
+    "retardoFalloMs": 450
+  }
+]

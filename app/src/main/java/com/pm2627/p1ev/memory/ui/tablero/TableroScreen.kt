@@ -27,6 +27,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -34,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pm2627.p1ev.memory.R
+import com.pm2627.p1ev.memory.efectos.rememberSonidos
 import com.pm2627.p1ev.memory.model.Carta
 import com.pm2627.p1ev.memory.model.Criatura
 import com.pm2627.p1ev.memory.model.EstadoCarta
@@ -50,6 +53,7 @@ import kotlinx.coroutines.delay
  * - Observa el estado con collectAsStateWithLifecycle(). Cuando llega un estado nuevo,
  *   Compose se recompone: UI = f(estado).
  * - LifecycleResumeEffect (3C.1 §5.3): al salir de la app para el tiempo y al volver lo reanuda.
+ * - LaunchedEffect(estado.ultimaJugada): vibración y sonido de cada jugada (mejoras opcionales).
  * - LaunchedEffect(estado.ganada): avisa de la victoria una sola vez para navegar al resultado.
  *
  * Esta pantalla NO decide nada del juego: solo envía eventos al ViewModel (onCartaPulsada(id)).
@@ -58,15 +62,37 @@ import kotlinx.coroutines.delay
 fun TableroScreen(
     nivel: Nivel,
     viewModel: TableroViewModel,
+    sonidoActivado: Boolean,
     onVolver: () -> Unit,
     onPartidaGanada: (movimientos: Int, segundos: Int) -> Unit,
 ) {
     val estado by viewModel.uiState.collectAsStateWithLifecycle()
+    val haptica = LocalHapticFeedback.current
+    val sonidos = rememberSonidos()
 
     // Se ejecuta al llegar a RESUMED; onPauseOrDispose, al salir de ese estado
     LifecycleResumeEffect(Unit) {
         viewModel.onVolverALaApp()
         onPauseOrDispose { viewModel.onSalirDeLaApp() }
+    }
+
+    // Mejoras: vibración (háptica) y sonido según lo que ha pasado en la jugada
+    LaunchedEffect(estado.ultimaJugada) {
+        val jugada = estado.ultimaJugada ?: return@LaunchedEffect
+        when (jugada.tipo) {
+            TipoJugada.PAREJA -> {
+                haptica.performHapticFeedback(HapticFeedbackType.Confirm)
+                if (sonidoActivado) sonidos.pareja()
+            }
+            TipoJugada.FALLO -> {
+                haptica.performHapticFeedback(HapticFeedbackType.Reject)
+                if (sonidoActivado) sonidos.fallo()
+            }
+            TipoJugada.VICTORIA -> {
+                haptica.performHapticFeedback(HapticFeedbackType.LongPress)
+                if (sonidoActivado) sonidos.victoria()
+            }
+        }
     }
 
     LaunchedEffect(estado.ganada) {
@@ -79,7 +105,10 @@ fun TableroScreen(
     TableroContent(
         nivel = nivel,
         estado = estado,
-        onCartaPulsada = viewModel::onCartaPulsada,
+        onCartaPulsada = { id ->
+            if (sonidoActivado && !estado.bloqueado) sonidos.giro()
+            viewModel.onCartaPulsada(id)
+        },
         onReiniciar = viewModel::onNuevaPartida,
         onVolver = onVolver,
     )
@@ -192,7 +221,6 @@ private fun Cuadricula(
     }
 }
 
-/** 83 segundos -> "1:23". */
 fun formatearTiempo(segundos: Int): String = "%d:%02d".format(segundos / 60, segundos % 60)
 
 @Preview(showBackground = true, widthDp = 380, heightDp = 760)

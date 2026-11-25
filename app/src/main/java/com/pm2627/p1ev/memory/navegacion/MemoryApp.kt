@@ -1,7 +1,13 @@
 package com.pm2627.p1ev.memory.navegacion
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavBackStack
@@ -32,8 +38,10 @@ import com.pm2627.p1ev.memory.ui.tablero.TableroViewModel
  */
 @Composable
 fun MemoryApp(modifier: Modifier = Modifier) {
-    val niveles = NivelesRepositorio.nivelesPorDefecto
+    val context = LocalContext.current
+    val niveles = remember { NivelesRepositorio.cargar(context) }
     val pila = rememberNavBackStack(Inicio)
+    var sonidoActivado by rememberSaveable { mutableStateOf(true) }
 
     fun nivelPorId(id: String): Nivel = niveles.firstOrNull { it.id == id } ?: niveles.first()
 
@@ -49,6 +57,8 @@ fun MemoryApp(modifier: Modifier = Modifier) {
             entry<Inicio> {
                 InicioScreen(
                     niveles = niveles,
+                    sonidoActivado = sonidoActivado,
+                    onCambiarSonido = { sonidoActivado = it },
                     onNivelElegido = { nivel -> pila.add(Tablero(nivelId = nivel.id)) },
                 )
             }
@@ -59,6 +69,7 @@ fun MemoryApp(modifier: Modifier = Modifier) {
                 TableroScreen(
                     nivel = nivel,
                     viewModel = viewModel,
+                    sonidoActivado = sonidoActivado,
                     onVolver = { pila.removeLastOrNull() },
                     onPartidaGanada = { movimientos, segundos ->
                         // Sustituyo el tablero por el resultado: atrás desde Resultado lleva a Inicio

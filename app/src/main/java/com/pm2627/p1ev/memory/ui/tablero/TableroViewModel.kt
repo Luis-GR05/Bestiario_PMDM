@@ -26,13 +26,13 @@ import kotlin.random.Random
  * El ViewModel sobrevive al giro del móvil (3C.1 §1.1), así que la partida no se pierde.
  * No importa nada de Compose: se prueba con tests de JVM (3C.4 §4).
  *
- * Por constructor recibo el azar y el retardo del fallo.
+ * Por constructor recibo el azar y el retardo del fallo (por defecto, el del nivel).
  * En los tests paso Random(42) para que el reparto sea siempre el mismo.
  */
 class TableroViewModel(
     private val nivel: Nivel,
     private val random: Random = Random.Default,
-    private val retardoFalloMs: Long = 900,
+    private val retardoFalloMs: Long = nivel.retardoFalloMs,
 ) : ViewModel() {
 
     // 1. Estado mutable privado (solo modificable dentro del ViewModel)
@@ -41,7 +41,7 @@ class TableroViewModel(
     // 2. Estado público inmutable (solo lectura para la interfaz)
     val uiState: StateFlow<TableroUiState> = _uiState.asStateFlow()
 
-    // Los Job no son datos de pantalla: no van en el UiState (3C.1 §5.1)
+    // No son datos de pantalla: no van en el UiState (3C.1 §5.1)
     private var jobCronometro: Job? = null
     private var jobFallo: Job? = null
 
@@ -49,7 +49,7 @@ class TableroViewModel(
         onNuevaPartida()
     }
 
-    /** Evento: nueva partida. Reparte y baraja otra vez (también lo usará el botón "Reiniciar"). */
+    /** Evento: nueva partida. Reparte y baraja otra vez (también lo usa el botón "Reiniciar"). */
     fun onNuevaPartida() {
         jobCronometro?.cancel()
         jobFallo?.cancel()
@@ -60,9 +60,9 @@ class TableroViewModel(
      * Evento: el usuario ha pulsado una carta. Las reglas, EN ESTE ORDEN:
      *   1. Tablero bloqueado o partida ganada: no hace nada.
      *   2. La carta no existe o no está boca abajo (ya girada o emparejada): no hace nada.
-     *   3. Es la primera del turno: se pone boca arriba. Si es la primera de la partida, arranca el tiempo.
+     *   3. Es la primera del turno: se pone boca arriba (y arranca el tiempo si es la primera de la partida).
      *   4. Es la segunda: se pone boca arriba y cuenta UN movimiento.
-     *        a. Pareja: las dos quedan emparejadas. Si era la última, partida ganada y se para el tiempo.
+     *        a. Pareja: las dos quedan emparejadas. Si era la última, partida ganada.
      *        b. No pareja: se bloquea el tablero, se espera y se vuelven a poner boca abajo.
      */
     fun onCartaPulsada(id: Int) {
@@ -85,8 +85,15 @@ class TableroViewModel(
         if (primera.esParejaDe(carta)) {                                    // 4a
             val cartas = estado.cartas.conEstado(EstadoCarta.EMPAREJADA, primera.id, id)
             val ganada = cartas.all { it.emparejada }
-            if (ganada) jobCronometro?.cancel()
-            _uiState.update { it.copy(cartas = cartas, movimientos = movimiento, ganada = ganada) }
+            if (ganada) jobCronometro?.cancel() // el tiempo se para al ganar
+            _uiState.update {
+                it.copy(
+                    cartas = cartas,
+                    movimientos = movimiento,
+                    ganada = ganada,
+                    ultimaJugada = Jugada(if (ganada) TipoJugada.VICTORIA else TipoJugada.PAREJA, movimiento),
+                )
+            }
         } else {                                                            // 4b
             // el bloqueo, antes de esperar: va en el mismo cambio de estado que gira la carta (3C.1 §5.2)
             _uiState.update {
@@ -94,6 +101,7 @@ class TableroViewModel(
                     cartas = it.cartas.conEstado(EstadoCarta.BOCA_ARRIBA, id),
                     movimientos = movimiento,
                     bloqueado = true,
+                    ultimaJugada = Jugada(TipoJugada.FALLO, movimiento),
                 )
             }
             jobFallo = viewModelScope.launch {
@@ -108,25 +116,25 @@ class TableroViewModel(
         }
     }
 
-    /** Evento: la app pasa a segundo plano (o se sale de la pantalla). El tiempo se pausa. */
+    /** Evento: la app pasa a segundo plano. Lo llama LifecycleResumeEffect (3C.1 §5.3): el tiempo se para. */
     fun onSalirDeLaApp() {
         jobCronometro?.cancel()
     }
 
-    /** Evento: la app vuelve a primer plano. Si la partida sigue en juego, el tiempo continúa. */
+    /** Evento: la app vuelve a primer plano. El tiempo sigue solo si la partida está en juego. */
     fun onVolverALaApp() {
         if (_uiState.value.enJuego) arrancarCronometro()
     }
 
     /**
-     * El cronómetro es una corrutina con un bucle: espera un segundo y suma uno (3C.1 §5.1).
-     * Antes de lanzar otro cancelo el anterior, así nunca hay dos contando a la vez.
+     * Temporizador: una tarea que se puede parar (3C.1 §5.1). Guardo el Job para poder
+     * cancelarlo, y la corrutina vive en viewModelScope, que se cancela sola al destruirse el ViewModel.
      */
     private fun arrancarCronometro() {
-        jobCronometro?.cancel()
+        jobCronometro?.cancel() // nunca dos corrutinas contando a la vez
         jobCronometro = viewModelScope.launch {
             while (true) {
-                delay(1_000)
+                delay(1_000) // suspende sin bloquear el hilo principal
                 _uiState.update { it.copy(segundos = it.segundos + 1) }
             }
         }
