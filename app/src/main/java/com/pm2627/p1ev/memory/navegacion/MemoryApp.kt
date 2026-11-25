@@ -60,10 +60,10 @@ fun MemoryApp(modifier: Modifier = Modifier) {
                     nivel = nivel,
                     viewModel = viewModel,
                     onVolver = { pila.removeLastOrNull() },
-                    onPartidaGanada = { movimientos ->
+                    onPartidaGanada = { movimientos, segundos ->
                         // Sustituyo el tablero por el resultado: atrás desde Resultado lleva a Inicio
                         pila.removeLastOrNull()
-                        pila.add(Resultado(nivel.id, movimientos))
+                        pila.add(Resultado(nivel.id, movimientos, segundos))
                     },
                 )
             }
@@ -71,6 +71,7 @@ fun MemoryApp(modifier: Modifier = Modifier) {
                 ResultadoScreen(
                     nivel = nivelPorId(clave.nivelId),
                     movimientos = clave.movimientos,
+                    segundos = clave.segundos,
                     onJugarOtraVez = {
                         pila.removeLastOrNull()
                         pila.add(Tablero(clave.nivelId))

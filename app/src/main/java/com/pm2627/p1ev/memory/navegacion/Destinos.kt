@@ -22,4 +22,5 @@ data class Tablero(val nivelId: String) : NavKey
 data class Resultado(
     val nivelId: String,
     val movimientos: Int,
+    val segundos: Int,
 ) : NavKey

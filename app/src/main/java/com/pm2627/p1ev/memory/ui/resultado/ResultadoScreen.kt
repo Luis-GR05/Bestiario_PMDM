@@ -21,6 +21,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.pm2627.p1ev.memory.model.Nivel
+import com.pm2627.p1ev.memory.ui.tablero.formatearTiempo
 import com.pm2627.p1ev.memory.ui.theme.MemoryTheme
 
 /**
@@ -30,6 +31,7 @@ import com.pm2627.p1ev.memory.ui.theme.MemoryTheme
 fun ResultadoScreen(
     nivel: Nivel,
     movimientos: Int,
+    segundos: Int,
     onJugarOtraVez: () -> Unit,
     onElegirNivel: () -> Unit,
 ) {
@@ -46,6 +48,7 @@ fun ResultadoScreen(
             Text("Has sobrevivido", style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
             Text("Nivel ${nivel.nombre}", style = MaterialTheme.typography.titleMedium)
             Text("Movimientos: $movimientos", style = MaterialTheme.typography.titleLarge)
+            Text("Tiempo: ${formatearTiempo(segundos)}", style = MaterialTheme.typography.titleLarge)
             Button(
                 onClick = onJugarOtraVez,
                 modifier = Modifier.widthIn(max = 420.dp).fillMaxWidth(),
@@ -62,6 +65,6 @@ fun ResultadoScreen(
 @Composable
 private fun ResultadoPreview() {
     MemoryTheme {
-        ResultadoScreen(Nivel("maestro", "Maestro", filas = 4, columnas = 4), 11, {}, {})
+        ResultadoScreen(Nivel("maestro", "Maestro", filas = 4, columnas = 4), 11, 83, {}, {})
     }
 }

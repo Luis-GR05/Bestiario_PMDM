@@ -41,7 +41,8 @@ class TableroViewModel(
     // 2. Estado público inmutable (solo lectura para la interfaz)
     val uiState: StateFlow<TableroUiState> = _uiState.asStateFlow()
 
-    // No es un dato de pantalla: no va en el UiState (3C.1 §5.1)
+    // Los Job no son datos de pantalla: no van en el UiState (3C.1 §5.1)
+    private var jobCronometro: Job? = null
     private var jobFallo: Job? = null
 
     init {
@@ -50,6 +51,7 @@ class TableroViewModel(
 
     /** Evento: nueva partida. Reparte y baraja otra vez (también lo usará el botón "Reiniciar"). */
     fun onNuevaPartida() {
+        jobCronometro?.cancel()
         jobFallo?.cancel()
         _uiState.value = TableroUiState(cartas = repartir(nivel, random))
     }
@@ -58,9 +60,9 @@ class TableroViewModel(
      * Evento: el usuario ha pulsado una carta. Las reglas, EN ESTE ORDEN:
      *   1. Tablero bloqueado o partida ganada: no hace nada.
      *   2. La carta no existe o no está boca abajo (ya girada o emparejada): no hace nada.
-     *   3. Es la primera del turno: se pone boca arriba.
+     *   3. Es la primera del turno: se pone boca arriba. Si es la primera de la partida, arranca el tiempo.
      *   4. Es la segunda: se pone boca arriba y cuenta UN movimiento.
-     *        a. Pareja: las dos quedan emparejadas. Si era la última, partida ganada.
+     *        a. Pareja: las dos quedan emparejadas. Si era la última, partida ganada y se para el tiempo.
      *        b. No pareja: se bloquea el tablero, se espera y se vuelven a poner boca abajo.
      */
     fun onCartaPulsada(id: Int) {
@@ -74,16 +76,17 @@ class TableroViewModel(
         val primera = estado.cartasBocaArriba.firstOrNull()
         if (primera == null) {                                              // 3
             // Actualizamos el estado con una copia inmutable
-            _uiState.update { it.copy(cartas = it.cartas.conEstado(EstadoCarta.BOCA_ARRIBA, id)) }
+            _uiState.update { it.copy(cartas = it.cartas.conEstado(EstadoCarta.BOCA_ARRIBA, id), empezada = true) }
+            if (!estado.empezada) arrancarCronometro()
             return
         }
 
         val movimiento = estado.movimientos + 1                             // 4
         if (primera.esParejaDe(carta)) {                                    // 4a
             val cartas = estado.cartas.conEstado(EstadoCarta.EMPAREJADA, primera.id, id)
-            _uiState.update {
-                it.copy(cartas = cartas, movimientos = movimiento, ganada = cartas.all { c -> c.emparejada })
-            }
+            val ganada = cartas.all { it.emparejada }
+            if (ganada) jobCronometro?.cancel()
+            _uiState.update { it.copy(cartas = cartas, movimientos = movimiento, ganada = ganada) }
         } else {                                                            // 4b
             // el bloqueo, antes de esperar: va en el mismo cambio de estado que gira la carta (3C.1 §5.2)
             _uiState.update {
@@ -101,6 +104,30 @@ class TableroViewModel(
                         bloqueado = false,
                     )
                 }
+            }
+        }
+    }
+
+    /** Evento: la app pasa a segundo plano (o se sale de la pantalla). El tiempo se pausa. */
+    fun onSalirDeLaApp() {
+        jobCronometro?.cancel()
+    }
+
+    /** Evento: la app vuelve a primer plano. Si la partida sigue en juego, el tiempo continúa. */
+    fun onVolverALaApp() {
+        if (_uiState.value.enJuego) arrancarCronometro()
+    }
+
+    /**
+     * El cronómetro es una corrutina con un bucle: espera un segundo y suma uno (3C.1 §5.1).
+     * Antes de lanzar otro cancelo el anterior, así nunca hay dos contando a la vez.
+     */
+    private fun arrancarCronometro() {
+        jobCronometro?.cancel()
+        jobCronometro = viewModelScope.launch {
+            while (true) {
+                delay(1_000)
+                _uiState.update { it.copy(segundos = it.segundos + 1) }
             }
         }
     }

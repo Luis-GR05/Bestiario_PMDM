@@ -3,6 +3,7 @@ package com.pm2627.p1ev.memory.ui.tablero
 import com.pm2627.p1ev.memory.model.EstadoCarta
 import com.pm2627.p1ev.memory.model.Nivel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -18,6 +19,7 @@ import kotlin.random.Random
  * Cada test sigue el patrón Arrange (preparo), Act (pulso) y Assert (compruebo).
  * Uso Random(42) para que el reparto sea siempre el mismo, y los ids de las parejas los
  * saco del estado con groupBy, sin memorizar posiciones.
+ * El temporizador SIEMPRE se para al final (finally): ¡páralo siempre!
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class TableroViewModelTest {
@@ -42,6 +44,15 @@ class TableroViewModelTest {
 
     private fun TableroViewModel.estadoDe(id: Int) = uiState.value.cartas.first { it.id == id }.estado
 
+    private suspend fun TestScope.probar(vm: TableroViewModel, bloque: suspend TestScope.() -> Unit) {
+        try {
+            bloque()
+        } finally {
+            vm.onSalirDeLaApp() // ¡páralo siempre!
+            runCurrent()
+        }
+    }
+
     @Test
     fun `al empezar todas las cartas estan boca abajo y hay una pareja de cada criatura`() {
         val vm = crearViewModel()
@@ -56,87 +67,139 @@ class TableroViewModelTest {
     @Test
     fun `emparejar dos cartas iguales las deja emparejadas y cuenta un movimiento`() = runTest {
         val vm = crearViewModel()
-        val (a, b) = vm.parejas()[0]
+        probar(vm) {
+            val (a, b) = vm.parejas()[0]
 
-        vm.onCartaPulsada(a)
-        vm.onCartaPulsada(b)
+            vm.onCartaPulsada(a)
+            vm.onCartaPulsada(b)
 
-        assertEquals(EstadoCarta.EMPAREJADA, vm.estadoDe(a))
-        assertEquals(EstadoCarta.EMPAREJADA, vm.estadoDe(b))
-        assertEquals(1, vm.uiState.value.movimientos)
-        assertEquals(1, vm.uiState.value.parejasEncontradas)
+            assertEquals(EstadoCarta.EMPAREJADA, vm.estadoDe(a))
+            assertEquals(EstadoCarta.EMPAREJADA, vm.estadoDe(b))
+            assertEquals(1, vm.uiState.value.movimientos)
+            assertEquals(1, vm.uiState.value.parejasEncontradas)
+        }
     }
 
     @Test
     fun `fallar bloquea el tablero y tras el retardo las cartas vuelven boca abajo`() = runTest {
         val vm = crearViewModel()
-        val (a, b) = vm.noPareja()
+        probar(vm) {
+            val (a, b) = vm.noPareja()
 
-        vm.onCartaPulsada(a)
-        vm.onCartaPulsada(b)
+            vm.onCartaPulsada(a)
+            vm.onCartaPulsada(b)
 
-        // Justo después del fallo: las dos boca arriba y el tablero bloqueado
-        assertEquals(EstadoCarta.BOCA_ARRIBA, vm.estadoDe(a))
-        assertEquals(EstadoCarta.BOCA_ARRIBA, vm.estadoDe(b))
-        assertTrue(vm.uiState.value.bloqueado)
-        assertEquals(1, vm.uiState.value.movimientos)
+            // Justo después del fallo: las dos boca arriba y el tablero bloqueado
+            assertEquals(EstadoCarta.BOCA_ARRIBA, vm.estadoDe(a))
+            assertEquals(EstadoCarta.BOCA_ARRIBA, vm.estadoDe(b))
+            assertTrue(vm.uiState.value.bloqueado)
+            assertEquals(1, vm.uiState.value.movimientos)
 
-        // Mientras está bloqueado, pulsar otra carta no hace nada
-        val otra = vm.parejas()[2][0]
-        vm.onCartaPulsada(otra)
-        assertEquals(EstadoCarta.BOCA_ABAJO, vm.estadoDe(otra))
+            // Mientras está bloqueado, pulsar otra carta no hace nada
+            val otra = vm.parejas()[2][0]
+            vm.onCartaPulsada(otra)
+            assertEquals(EstadoCarta.BOCA_ABAJO, vm.estadoDe(otra))
 
-        advanceTimeBy(retardo) // avanza el reloj virtual el tiempo del retardo
-        runCurrent()           // ejecuta también lo programado justo en ese instante
+            advanceTimeBy(retardo) // avanza el reloj virtual el tiempo del retardo
+            runCurrent()           // ejecuta también lo programado justo en ese instante
 
-        assertEquals(EstadoCarta.BOCA_ABAJO, vm.estadoDe(a))
-        assertEquals(EstadoCarta.BOCA_ABAJO, vm.estadoDe(b))
-        assertFalse(vm.uiState.value.bloqueado)
-        assertEquals(1, vm.uiState.value.movimientos)
+            assertEquals(EstadoCarta.BOCA_ABAJO, vm.estadoDe(a))
+            assertEquals(EstadoCarta.BOCA_ABAJO, vm.estadoDe(b))
+            assertFalse(vm.uiState.value.bloqueado)
+            assertEquals(1, vm.uiState.value.movimientos)
+        }
     }
 
     @Test
-    fun `encontrar todas las parejas gana la partida`() = runTest {
+    fun `encontrar todas las parejas gana la partida y para el tiempo`() = runTest {
         val vm = crearViewModel()
+        probar(vm) {
+            vm.parejas().forEach { (a, b) ->
+                vm.onCartaPulsada(a)
+                vm.onCartaPulsada(b)
+            }
 
-        vm.parejas().forEach { (a, b) ->
-            vm.onCartaPulsada(a)
-            vm.onCartaPulsada(b)
+            val estado = vm.uiState.value
+            assertTrue(estado.ganada)
+            assertEquals(3, estado.movimientos)
+            assertEquals(3, estado.parejasEncontradas)
+
+            // El tiempo ya no avanza
+            val segundos = estado.segundos
+            advanceTimeBy(5_000)
+            runCurrent()
+            assertEquals(segundos, vm.uiState.value.segundos)
         }
-
-        val estado = vm.uiState.value
-        assertTrue(estado.ganada)
-        assertEquals(3, estado.movimientos)
-        assertEquals(3, estado.parejasEncontradas)
     }
 
     @Test
     fun `pulsar una carta ya girada o emparejada no hace nada`() = runTest {
         val vm = crearViewModel()
-        val (a, b) = vm.parejas()[0]
+        probar(vm) {
+            val (a, b) = vm.parejas()[0]
+            vm.onCartaPulsada(a)
+            vm.onCartaPulsada(a) // la misma otra vez: no cuenta como segunda carta
+            assertEquals(0, vm.uiState.value.movimientos)
+            assertEquals(EstadoCarta.BOCA_ARRIBA, vm.estadoDe(a))
 
-        vm.onCartaPulsada(a)
-        vm.onCartaPulsada(a) // la misma otra vez: no cuenta como segunda carta
-        assertEquals(0, vm.uiState.value.movimientos)
-        assertEquals(EstadoCarta.BOCA_ARRIBA, vm.estadoDe(a))
-
-        vm.onCartaPulsada(b)
-        vm.onCartaPulsada(a)  // ya emparejada
-        vm.onCartaPulsada(99) // no existe
-        assertEquals(1, vm.uiState.value.movimientos)
+            vm.onCartaPulsada(b)
+            vm.onCartaPulsada(a) // ya emparejada
+            vm.onCartaPulsada(99) // no existe
+            assertEquals(1, vm.uiState.value.movimientos)
+        }
     }
 
     @Test
-    fun `nueva partida reinicia los contadores y vuelve a repartir`() = runTest {
+    fun `el tiempo empieza con la primera carta y cuenta segundos`() = runTest {
         val vm = crearViewModel()
-        val (a, b) = vm.parejas()[0]
-        vm.onCartaPulsada(a)
-        vm.onCartaPulsada(b)
+        probar(vm) {
+            advanceTimeBy(3_000)
+            runCurrent()
+            assertEquals(0, vm.uiState.value.segundos) // aún no se ha pulsado nada
 
-        vm.onNuevaPartida()
+            vm.onCartaPulsada(vm.parejas()[0][0])
+            advanceTimeBy(3_000)
+            runCurrent()
+            assertEquals(3, vm.uiState.value.segundos)
+        }
+    }
 
-        val estado = vm.uiState.value
-        assertEquals(0, estado.movimientos)
-        assertTrue(estado.cartas.all { it.estado == EstadoCarta.BOCA_ABAJO })
+    @Test
+    fun `salir de la app pausa el tiempo y volver no cuenta el doble`() = runTest {
+        val vm = crearViewModel()
+        probar(vm) {
+            vm.onCartaPulsada(vm.parejas()[0][0])
+            advanceTimeBy(2_000)
+            runCurrent()
+
+            vm.onSalirDeLaApp()
+            advanceTimeBy(10_000)
+            runCurrent()
+            assertEquals(2, vm.uiState.value.segundos) // en pausa no corre
+
+            vm.onVolverALaApp()
+            vm.onVolverALaApp() // dos veces seguidas: sigue habiendo un solo cronómetro
+            advanceTimeBy(3_000)
+            runCurrent()
+            assertEquals(5, vm.uiState.value.segundos)
+        }
+    }
+
+    @Test
+    fun `nueva partida reinicia contadores y vuelve a repartir`() = runTest {
+        val vm = crearViewModel()
+        probar(vm) {
+            val (a, b) = vm.parejas()[0]
+            vm.onCartaPulsada(a)
+            vm.onCartaPulsada(b)
+
+            vm.onNuevaPartida()
+
+            val estado = vm.uiState.value
+            assertEquals(0, estado.movimientos)
+            assertEquals(0, estado.segundos)
+            assertFalse(estado.empezada)
+            assertTrue(estado.cartas.all { it.estado == EstadoCarta.BOCA_ABAJO })
+        }
     }
 }

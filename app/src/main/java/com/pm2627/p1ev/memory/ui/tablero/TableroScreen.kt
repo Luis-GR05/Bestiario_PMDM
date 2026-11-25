@@ -27,6 +27,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pm2627.p1ev.memory.R
 import com.pm2627.p1ev.memory.model.Carta
@@ -42,6 +43,7 @@ import kotlinx.coroutines.delay
  *
  * - Observa el estado con collectAsStateWithLifecycle(). Cuando llega un estado nuevo,
  *   Compose se recompone: UI = f(estado).
+ * - LifecycleResumeEffect (3C.1 §5.3): al salir de la app para el tiempo y al volver lo reanuda.
  * - LaunchedEffect(estado.ganada): avisa de la victoria una sola vez para navegar al resultado.
  *
  * Esta pantalla NO decide nada del juego: solo envía eventos al ViewModel (onCartaPulsada(id)).
@@ -51,14 +53,20 @@ fun TableroScreen(
     nivel: Nivel,
     viewModel: TableroViewModel,
     onVolver: () -> Unit,
-    onPartidaGanada: (movimientos: Int) -> Unit,
+    onPartidaGanada: (movimientos: Int, segundos: Int) -> Unit,
 ) {
     val estado by viewModel.uiState.collectAsStateWithLifecycle()
+
+    // Se ejecuta al llegar a RESUMED; onPauseOrDispose, al salir de ese estado
+    LifecycleResumeEffect(Unit) {
+        viewModel.onVolverALaApp()
+        onPauseOrDispose { viewModel.onSalirDeLaApp() }
+    }
 
     LaunchedEffect(estado.ganada) {
         if (estado.ganada) {
             delay(900) // dejo ver la última pareja antes de cambiar de pantalla
-            onPartidaGanada(estado.movimientos)
+            onPartidaGanada(estado.movimientos, estado.segundos)
         }
     }
 
@@ -123,6 +131,7 @@ private fun Marcadores(estado: TableroUiState) {
     ) {
         Marcador("Movimientos", "${estado.movimientos}", Modifier.weight(1f))
         Marcador("Parejas", "${estado.parejasEncontradas}/${estado.parejasTotales}", Modifier.weight(1f))
+        Marcador("Tiempo", formatearTiempo(estado.segundos), Modifier.weight(1f))
     }
 }
 
@@ -162,6 +171,9 @@ private fun Cuadricula(
     }
 }
 
+/** 83 segundos -> "1:23". */
+fun formatearTiempo(segundos: Int): String = "%d:%02d".format(segundos / 60, segundos % 60)
+
 @Preview(showBackground = true, widthDp = 380, heightDp = 760)
 @Composable
 private fun TableroPreview() {
@@ -170,6 +182,6 @@ private fun TableroPreview() {
         Carta(i, c, if (i < 4) EstadoCarta.EMPAREJADA else if (i == 6) EstadoCarta.BOCA_ARRIBA else EstadoCarta.BOCA_ABAJO)
     }
     MemoryTheme {
-        TableroContent(nivel, TableroUiState(cartas = cartas, movimientos = 5), {}, {}, {})
+        TableroContent(nivel, TableroUiState(cartas = cartas, movimientos = 5, segundos = 83, empezada = true), {}, {}, {})
     }
 }
