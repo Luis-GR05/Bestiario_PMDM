@@ -14,7 +14,7 @@ Bestiario es un juego de memoria con estética de libro antiguo: fondo de tinta,
 
 Las ilustraciones son grabados de **dominio público** descargados de Wikimedia Commons. Las he recortado y les he aplicado el mismo tono sepia y un viñeteado (Pillow, en Python) para que todas parezcan del mismo libro. Las versiones descargadas están en `docs/fuentes/` y el diseño de las cartas en Figma (enlace en el apartado 3).
 
-| Imagen (`res/drawable-nodpi`) | Obra original y autoría | Licencia | Fuente |
+| Imagen (`res/drawable`) | Obra original y autoría | Licencia | Fuente |
 | :--- | :--- | :--- | :--- |
 | `carta_hidra.webp` | Albertus Seba, *Locupletissimi rerum naturalium thesauri*, lámina de la hidra (1734) | Dominio público | [Commons](https://commons.wikimedia.org/wiki/File:Albertus_Seba_-_Hydra.jpg) |
 | `carta_arpia.webp` | Ulisse Aldrovandi, *Monstrorum historia* (Bolonia, 1642); grabado de Jean-Baptiste Coriolan | Dominio público | [Commons](https://commons.wikimedia.org/wiki/File:Aldrovandi-0337.jpg) |
