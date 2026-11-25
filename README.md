@@ -27,7 +27,7 @@ Las ilustraciones son grabados de **dominio público** descargados de Wikimedia 
 | `carta_reverso.xml`, `ic_launcher_foreground.xml` | Hechos por mí como vectores (el ojo del bestiario) (IA) | Propia (IA) | — |
 | `ic_volver.xml`, `ic_reiniciar.xml` | Iconos «arrow_back» y «refresh» de Material Icons (Google) | Apache 2.0 | [Material Icons](https://fonts.google.com/icons) |
 | `font/cinzel.ttf` | Fuente Cinzel (The Cinzel Project Authors) | SIL Open Font License 1.1 | [Google Fonts](https://github.com/google/fonts/tree/main/ofl/cinzel) |
-| `raw/giro.wav`, `pareja.wav`, `fallo.wav`, `victoria.wav` | Sintetizados por mí con un script en Python | Propia | — |
+| `raw/giro.wav`, `pareja.wav`, `fallo.wav`, `victoria.wav` | Sintetizados por mí con un script en Python (IA) | Propia (IA) | — |
 
 ## 3. Captura o GIF
 
