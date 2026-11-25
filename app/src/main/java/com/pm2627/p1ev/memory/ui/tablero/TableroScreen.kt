@@ -10,30 +10,39 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.pm2627.p1ev.memory.R
 import com.pm2627.p1ev.memory.model.Carta
 import com.pm2627.p1ev.memory.model.Criatura
 import com.pm2627.p1ev.memory.model.EstadoCarta
 import com.pm2627.p1ev.memory.model.Nivel
 import com.pm2627.p1ev.memory.ui.componentes.CartaView
 import com.pm2627.p1ev.memory.ui.theme.MemoryTheme
+import kotlinx.coroutines.delay
 
 /**
  * PANTALLA DEL TABLERO, la parte "Stateful" (apuntes 3C.1 §4.1): conoce el ViewModel.
  *
- * Observa el estado con collectAsStateWithLifecycle(). Cuando llega un estado nuevo,
- * Compose se recompone: UI = f(estado).
+ * - Observa el estado con collectAsStateWithLifecycle(). Cuando llega un estado nuevo,
+ *   Compose se recompone: UI = f(estado).
+ * - LaunchedEffect(estado.ganada): avisa de la victoria una sola vez para navegar al resultado.
  *
  * Esta pantalla NO decide nada del juego: solo envía eventos al ViewModel (onCartaPulsada(id)).
  */
@@ -41,16 +50,24 @@ import com.pm2627.p1ev.memory.ui.theme.MemoryTheme
 fun TableroScreen(
     nivel: Nivel,
     viewModel: TableroViewModel,
-    modifier: Modifier = Modifier,
+    onVolver: () -> Unit,
+    onPartidaGanada: (movimientos: Int) -> Unit,
 ) {
     val estado by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(estado.ganada) {
+        if (estado.ganada) {
+            delay(900) // dejo ver la última pareja antes de cambiar de pantalla
+            onPartidaGanada(estado.movimientos)
+        }
+    }
 
     TableroContent(
         nivel = nivel,
         estado = estado,
         onCartaPulsada = viewModel::onCartaPulsada,
         onReiniciar = viewModel::onNuevaPartida,
-        modifier = modifier,
+        onVolver = onVolver,
     )
 }
 
@@ -58,28 +75,43 @@ fun TableroScreen(
  * La parte "Stateless" (3C.1 §4.2): recibe el estado y avisa de los eventos con lambdas
  * (state hoisting). No guarda nada, así que se puede previsualizar con @Preview.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TableroContent(
     nivel: Nivel,
     estado: TableroUiState,
     onCartaPulsada: (Int) -> Unit,
     onReiniciar: () -> Unit,
-    modifier: Modifier = Modifier,
+    onVolver: () -> Unit,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Text(nivel.nombre, style = MaterialTheme.typography.headlineSmall)
-        Marcadores(estado)
-        if (estado.ganada) {
-            Text("¡Has encontrado todas las parejas!", style = MaterialTheme.typography.titleMedium)
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text(nivel.nombre) },
+                navigationIcon = {
+                    IconButton(onClick = onVolver) {
+                        Icon(painterResource(R.drawable.ic_volver), contentDescription = "Volver al inicio")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onReiniciar) {
+                        Icon(painterResource(R.drawable.ic_reiniciar), contentDescription = "Reiniciar partida")
+                    }
+                },
+            )
+        },
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Marcadores(estado)
+            Cuadricula(nivel, estado.cartas, onCartaPulsada)
         }
-        OutlinedButton(onClick = onReiniciar) { Text("Reiniciar") }
-        Cuadricula(nivel, estado.cartas, onCartaPulsada)
     }
 }
 
@@ -138,6 +170,6 @@ private fun TableroPreview() {
         Carta(i, c, if (i < 4) EstadoCarta.EMPAREJADA else if (i == 6) EstadoCarta.BOCA_ARRIBA else EstadoCarta.BOCA_ABAJO)
     }
     MemoryTheme {
-        TableroContent(nivel, TableroUiState(cartas = cartas, movimientos = 5), {}, {})
+        TableroContent(nivel, TableroUiState(cartas = cartas, movimientos = 5), {}, {}, {})
     }
 }
