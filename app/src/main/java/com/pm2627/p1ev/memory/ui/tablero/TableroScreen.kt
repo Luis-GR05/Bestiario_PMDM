@@ -25,31 +25,28 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.pm2627.p1ev.memory.datos.NivelesRepositorio
 import com.pm2627.p1ev.memory.model.Carta
+import com.pm2627.p1ev.memory.model.EstadoCarta
+import com.pm2627.p1ev.memory.model.repartir
 import com.pm2627.p1ev.memory.ui.theme.MemoryTheme
+import kotlin.random.Random
 
 /**
- * LA PANTALLA DEL TABLERO · PUNTO DE PARTIDA
+ * LA PANTALLA DEL TABLERO · VERSIÓN PROVISIONAL
  *
- * Esto ya funciona: seis casillas lisas en una cuadrícula y un contador de toques.
- * Al tocar una casilla se da la vuelta y enseña su número; si la vuelves a tocar,
- * se pone boca abajo. Todavía no hay parejas, ni reglas, ni imágenes.
+ * Ya usa el modelo nuevo: reparte las cartas del primer nivel con repartir() y, al tocar
+ * una casilla, cambia su estado entre BOCA_ABAJO y BOCA_ARRIBA. Todavía no hay reglas.
  *
- * Pero está hecho MAL a propósito: el estado (las cartas y los toques) vive AQUÍ,
- * dentro de la pantalla, con remember. Prueba esto:
- *   1. Ejecuta la app, da la vuelta a dos o tres casillas.
- *   2. Gira el móvil (o el emulador).
- *   3. ¿Qué ha pasado con las casillas y el contador? ¿Por qué?
- *
- * Ese es el punto de partida de la guía paso a paso: sacar el estado de la pantalla
- * y llevarlo al TableroViewModel (que ya existe y todavía no usa nadie).
+ * Sigue estando MAL a propósito: el estado vive aquí, con remember, y se pierde al girar
+ * el móvil. En la siguiente parte lo llevo al TableroViewModel.
  *
  * Apuntes: Compose · estado (22-state-management) · 3C.1 §1.1 (cambios de configuración)
  */
 @Composable
 fun TableroScreen(modifier: Modifier = Modifier) {
     // ⚠️ El estado de la partida, dentro de la pantalla: se pierde al girar el móvil.
-    var cartas by remember { mutableStateOf(List(6) { Carta(id = it) }) }
+    var cartas by remember { mutableStateOf(repartir(NivelesRepositorio.nivelesPorDefecto.first(), Random.Default)) }
     var toques by remember { mutableIntStateOf(0) }
 
     Column(
@@ -58,7 +55,6 @@ fun TableroScreen(modifier: Modifier = Modifier) {
     ) {
         Text("Toques: $toques", style = MaterialTheme.typography.titleLarge)
 
-        // Casillas de al menos 100 dp: 3 columnas en vertical y todas en una fila en horizontal.
         LazyVerticalGrid(
             columns = GridCells.Adaptive(minSize = 100.dp),
             modifier = Modifier.widthIn(max = 720.dp),
@@ -71,7 +67,11 @@ fun TableroScreen(modifier: Modifier = Modifier) {
                     onClick = {
                         // La lista es inmutable: se crea una lista NUEVA con esa carta cambiada.
                         cartas = cartas.map {
-                            if (it.id == carta.id) it.copy(bocaArriba = !it.bocaArriba) else it
+                            if (it.id == carta.id) {
+                                it.copy(estado = if (it.bocaAbajo) EstadoCarta.BOCA_ARRIBA else EstadoCarta.BOCA_ABAJO)
+                            } else {
+                                it
+                            }
                         }
                         toques++
                     },
@@ -81,21 +81,21 @@ fun TableroScreen(modifier: Modifier = Modifier) {
     }
 }
 
-/** Una casilla lisa: «?» boca abajo y su número boca arriba. */
+/** Una casilla lisa: «?» boca abajo y el nombre de su criatura boca arriba. */
 @Composable
 private fun Casilla(carta: Carta, onClick: () -> Unit) {
     Card(
         modifier = Modifier.aspectRatio(3f / 4f).clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
-            containerColor = if (carta.bocaArriba) MaterialTheme.colorScheme.secondaryContainer
+            containerColor = if (!carta.bocaAbajo) MaterialTheme.colorScheme.secondaryContainer
             else MaterialTheme.colorScheme.primary,
         ),
     ) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(
-                text = if (carta.bocaArriba) "${carta.id + 1}" else "?",
-                style = MaterialTheme.typography.headlineMedium,
-                color = if (carta.bocaArriba) MaterialTheme.colorScheme.onSecondaryContainer
+                text = if (!carta.bocaAbajo) carta.criatura.nombre else "?",
+                style = MaterialTheme.typography.titleMedium,
+                color = if (!carta.bocaAbajo) MaterialTheme.colorScheme.onSecondaryContainer
                 else MaterialTheme.colorScheme.onPrimary,
             )
         }
