@@ -20,3 +20,13 @@ fun repartir(
         .flatMap { listOf(it, it) }
         .shuffled(random)
         .mapIndexed { indice, criatura -> Carta(id = indice, criatura = criatura) }
+
+/**
+ * Valoración de 1 a 3 estrellas para la pantalla de resultado.
+ * Lo ideal sería una jugada por pareja: cuantos más movimientos de sobra, menos estrellas.
+ */
+fun calcularEstrellas(movimientos: Int, parejas: Int): Int = when {
+    movimientos <= parejas + parejas / 2 -> 3
+    movimientos <= parejas * 2 -> 2
+    else -> 1
+}

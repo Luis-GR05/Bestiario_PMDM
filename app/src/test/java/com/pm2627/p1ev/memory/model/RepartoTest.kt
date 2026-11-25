@@ -38,4 +38,11 @@ class RepartoTest {
 
         assertTrue(cartas.all { it.estado == EstadoCarta.BOCA_ABAJO })
     }
+
+    @Test
+    fun `las estrellas premian hacer pocos movimientos`() {
+        assertEquals(3, calcularEstrellas(movimientos = 8, parejas = 8))
+        assertEquals(2, calcularEstrellas(movimientos = 15, parejas = 8))
+        assertEquals(1, calcularEstrellas(movimientos = 30, parejas = 8))
+    }
 }

@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Tema de la ventana; los colores de la interfaz se definen en ui/theme/Theme.kt -->
-    <style name="Theme.Memory" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- Tema de la ventana; los colores de la interfaz se definen en ui/theme/Theme.kt.
+         El juego es siempre oscuro: el fondo de la ventana ya es "tinta" para que no haya
+         un destello blanco al abrir la app. -->
+    <style name="Theme.Memory" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/tinta</item>
+    </style>
 </resources>

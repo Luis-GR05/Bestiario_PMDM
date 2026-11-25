@@ -1,6 +1,9 @@
 package com.pm2627.p1ev.memory.ui.tablero
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -35,7 +39,9 @@ import com.pm2627.p1ev.memory.model.Criatura
 import com.pm2627.p1ev.memory.model.EstadoCarta
 import com.pm2627.p1ev.memory.model.Nivel
 import com.pm2627.p1ev.memory.ui.componentes.CartaView
+import com.pm2627.p1ev.memory.ui.componentes.DURACION_GIRO_MS
 import com.pm2627.p1ev.memory.ui.theme.MemoryTheme
+import com.pm2627.p1ev.memory.ui.theme.Oro
 import kotlinx.coroutines.delay
 
 /**
@@ -65,7 +71,7 @@ fun TableroScreen(
 
     LaunchedEffect(estado.ganada) {
         if (estado.ganada) {
-            delay(900) // dejo ver la última pareja antes de cambiar de pantalla
+            delay(DURACION_GIRO_MS + 700L) // dejo ver la última pareja antes de cambiar de pantalla
             onPartidaGanada(estado.movimientos, estado.segundos)
         }
     }
@@ -95,7 +101,7 @@ fun TableroContent(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(nivel.nombre) },
+                title = { Text(nivel.nombre, style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = onVolver) {
                         Icon(painterResource(R.drawable.ic_volver), contentDescription = "Volver al inicio")
@@ -106,6 +112,9 @@ fun TableroContent(
                         Icon(painterResource(R.drawable.ic_reiniciar), contentDescription = "Reiniciar partida")
                     }
                 },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                ),
             )
         },
     ) { padding ->
@@ -118,7 +127,7 @@ fun TableroContent(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Marcadores(estado)
-            Cuadricula(nivel, estado.cartas, onCartaPulsada)
+            Cuadricula(nivel, estado.cartas, onCartaPulsada, Modifier.weight(1f))
         }
     }
 }
@@ -139,18 +148,21 @@ private fun Marcadores(estado: TableroUiState) {
 private fun Marcador(titulo: String, valor: String, modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier,
-        color = MaterialTheme.colorScheme.surfaceVariant,
+        color = MaterialTheme.colorScheme.surface,
         shape = MaterialTheme.shapes.medium,
+        border = BorderStroke(1.dp, Oro.copy(alpha = 0.5f)),
     ) {
         Column(Modifier.padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(titulo, style = MaterialTheme.typography.labelMedium)
-            Text(valor, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
+            Text(titulo.uppercase(), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(valor, style = MaterialTheme.typography.titleLarge, color = Oro, textAlign = TextAlign.Center)
         }
     }
 }
 
 /**
  * La cuadrícula de cartas con LazyVerticalGrid y GridCells.Fixed (apuntes 3A.3 §4.2).
+ * En vertical uso las columnas del nivel; en horizontal las giro (más columnas que filas)
+ * para que el tablero quepa sin hacer scroll.
  * key = id (3A.3 §3): así Compose sabe qué carta es cuál y solo redibuja la que cambia.
  */
 @Composable
@@ -158,15 +170,24 @@ private fun Cuadricula(
     nivel: Nivel,
     cartas: List<Carta>,
     onCartaPulsada: (Int) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(nivel.columnas),
-        modifier = Modifier.widthIn(max = 560.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        items(cartas, key = { it.id }) { carta ->
-            CartaView(carta = carta, onClick = { onCartaPulsada(carta.id) })
+    BoxWithConstraints(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+        val horizontal = maxWidth > maxHeight
+        val columnas = if (horizontal) maxOf(nivel.filas, nivel.columnas) else minOf(nivel.filas, nivel.columnas)
+        val filas = nivel.totalCartas / columnas
+        // Ancho máximo para que las filas quepan en el alto disponible (cartas 3:4)
+        val anchoPorAlto = (maxHeight - 8.dp * (filas - 1)) / filas * 3f / 4f * columnas + 8.dp * (columnas - 1)
+        Box(Modifier.widthIn(max = minOf(maxWidth, anchoPorAlto))) {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(columnas),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                items(cartas, key = { it.id }) { carta ->
+                    CartaView(carta = carta, onClick = { onCartaPulsada(carta.id) })
+                }
+            }
         }
     }
 }
@@ -177,11 +198,11 @@ fun formatearTiempo(segundos: Int): String = "%d:%02d".format(segundos / 60, seg
 @Preview(showBackground = true, widthDp = 380, heightDp = 760)
 @Composable
 private fun TableroPreview() {
-    val nivel = Nivel("cazador", "Cazador", filas = 4, columnas = 3)
-    val cartas = Criatura.entries.take(6).flatMap { listOf(it, it) }.mapIndexed { i, c ->
+    val nivel = Nivel("maestro", "Maestro", filas = 4, columnas = 4)
+    val cartas = Criatura.entries.take(8).flatMap { listOf(it, it) }.mapIndexed { i, c ->
         Carta(i, c, if (i < 4) EstadoCarta.EMPAREJADA else if (i == 6) EstadoCarta.BOCA_ARRIBA else EstadoCarta.BOCA_ABAJO)
     }
     MemoryTheme {
-        TableroContent(nivel, TableroUiState(cartas = cartas, movimientos = 5, segundos = 83, empezada = true), {}, {}, {})
+        TableroContent(nivel, TableroUiState(cartas = cartas, movimientos = 5, segundos = 42, empezada = true), {}, {}, {})
     }
 }

@@ -1,20 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Icono de ejemplo: un móvil sobre fondo verde. Sustituir con File > New > Image Asset -->
+<!-- Icono propio: el ojo del reverso de las cartas -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Carcasa -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M42,30h24a4,4 0,0 1,4 4v40a4,4 0,0 1,-4 4h-24a4,4 0,0 1,-4 -4v-40a4,4 0,0 1,4 -4z" />
-    <!-- Pantalla -->
+        android:pathData="M54,30 A24,24 0 1,0 54,78 A24,24 0 1,0 54,30 Z"
+        android:fillColor="#14100C"
+        android:strokeColor="#C9A24A"
+        android:strokeWidth="2.5" />
     <path
-        android:fillColor="#073042"
-        android:pathData="M42,36h24v32h-24z" />
-    <!-- Botón -->
+        android:pathData="M34,54 Q54,37 74,54 Q54,71 34,54 Z"
+        android:fillColor="#E8DBBE"
+        android:strokeColor="#C9A24A"
+        android:strokeWidth="1.8" />
     <path
-        android:fillColor="#073042"
-        android:pathData="M54,73m-2,0a2,2 0,1 1,4 0a2,2 0,1 1,-4 0" />
+        android:pathData="M46,54 A8,8 0 1,0 62,54 A8,8 0 1,0 46,54 Z"
+        android:fillColor="#8E1B1B" />
+    <path
+        android:pathData="M52,54 A2,6.5 0 1,0 56,54 A2,6.5 0 1,0 52,54 Z"
+        android:fillColor="#14100C" />
 </vector>
