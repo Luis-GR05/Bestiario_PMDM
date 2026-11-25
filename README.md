@@ -24,7 +24,7 @@ Las ilustraciones son grabados de **dominio público** descargados de Wikimedia 
 | `carta_rape.webp` | Ilustración científica de *Melanocetus johnsonii* (autor no indicado en la ficha) | Dominio público | [Commons](https://commons.wikimedia.org/wiki/File:Humpback_anglerfish.png) |
 | `carta_hiena.webp` | Alfred Brehm, *Brehms Tierleben*, hienas rayadas (1894) | Dominio público | [Commons](https://commons.wikimedia.org/wiki/File:Brehms_striped_hyenas.png) |
 | `carta_lobo.webp` | Richard Lydekker, esqueletos de *Canis lupus* y *Crocuta crocuta* (1893) | Dominio público | [Commons](https://commons.wikimedia.org/wiki/File:Canis_lupus_%26_Crocuta_crocuta.png) |
-| `carta_reverso.xml`, `ic_launcher_foreground.xml` | Hechos por mí como vectores (el ojo del bestiario) | Propia | — |
+| `carta_reverso.xml`, `ic_launcher_foreground.xml` | Hechos por mí como vectores (el ojo del bestiario) (IA) | Propia (IA) | — |
 | `ic_volver.xml`, `ic_reiniciar.xml` | Iconos «arrow_back» y «refresh» de Material Icons (Google) | Apache 2.0 | [Material Icons](https://fonts.google.com/icons) |
 | `font/cinzel.ttf` | Fuente Cinzel (The Cinzel Project Authors) | SIL Open Font License 1.1 | [Google Fonts](https://github.com/google/fonts/tree/main/ofl/cinzel) |
 | `raw/giro.wav`, `pareja.wav`, `fallo.wav`, `victoria.wav` | Sintetizados por mí con un script en Python | Propia | — |
