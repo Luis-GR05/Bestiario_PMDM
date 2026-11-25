@@ -1,21 +1,22 @@
 package com.pm2627.p1ev.memory.ui.tablero
 
 import com.pm2627.p1ev.memory.model.Carta
+import com.pm2627.p1ev.memory.model.EstadoCarta
 
 /**
- * EL ESTADO DE LA PARTIDA: todo lo que pinta la pantalla del tablero.
- *
- * Todavía NO lo usa nadie: ahora mismo el estado vive dentro de TableroScreen, con
- * remember. Cuando lo saques de la pantalla, vivirá aquí, en un único objeto inmutable
- * que publica el TableroViewModel.
- *
- * Reglas:
- *   - data class con val: inmutable. Cada cambio crea un estado nuevo con copy(…).
- *   - es la ÚNICA fuente de verdad: si algo se ve en pantalla, sale de aquí.
- *
- * Apuntes: 3C.1 §2 (modelado inmutable del estado)
+ * EL ESTADO DE LA PARTIDA (UiState): todo lo que pinta la pantalla del tablero.
+ * Es la fuente única de verdad de la pantalla (apuntes 3C.1 §2).
+ * Inmutable: data class con val. El ViewModel no lo modifica, crea uno nuevo con copy().
  */
 data class TableroUiState(
     val cartas: List<Carta> = emptyList(),
-    // TODO 5 (apartado 1.6): añade el resto del estado y, en el cuerpo, las propiedades calculadas.
-)
+    val movimientos: Int = 0,
+    /** true mientras se enseñan dos cartas que no son pareja: no se puede pulsar nada. */
+    val bloqueado: Boolean = false,
+    val ganada: Boolean = false,
+) {
+    // Propiedades calculadas (3C.1 §2.1): se sacan de las cartas, así no se pueden desincronizar.
+    val parejasTotales: Int get() = cartas.size / 2
+    val parejasEncontradas: Int get() = cartas.count { it.emparejada } / 2
+    val cartasBocaArriba: List<Carta> get() = cartas.filter { it.estado == EstadoCarta.BOCA_ARRIBA }
+}
