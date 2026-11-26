@@ -157,7 +157,7 @@ fun TableroContent(
         ) {
             Marcadores(estado)
             Text(
-                "Fallos ${estado.fallos} . Puntuación ${estado.puntuacion}",
+                "Fallos ${estado.fallos} . Puntuación ${estado.puntuacion} . Racha ${estado.rachaTotal} . Mejor racha ${estado.mejorRacha}",
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
