@@ -156,6 +156,12 @@ fun TableroContent(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Marcadores(estado)
+            Text(
+                "Fallos ${estado.fallos}",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
             Cuadricula(nivel, estado.cartas, onCartaPulsada, Modifier.weight(1f))
         }
     }

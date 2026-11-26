@@ -101,6 +101,7 @@ class TableroViewModel(
                     cartas = it.cartas.conEstado(EstadoCarta.BOCA_ARRIBA, id),
                     movimientos = movimiento,
                     bloqueado = true,
+                    fallos = it.fallos + 1,
                     ultimaJugada = Jugada(TipoJugada.FALLO, movimiento),
                 )
             }
