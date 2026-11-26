@@ -92,6 +92,8 @@ class TableroViewModel(
                     movimientos = movimiento,
                     ganada = ganada,
                     ultimaJugada = Jugada(if (ganada) TipoJugada.VICTORIA else TipoJugada.PAREJA, movimiento),
+                    puntuacion = if(it.racha) it.puntuacion + 15 else it.puntuacion + 10,
+                    racha = true,
                 )
             }
         } else {                                                            // 4b
@@ -102,6 +104,8 @@ class TableroViewModel(
                     movimientos = movimiento,
                     bloqueado = true,
                     fallos = it.fallos + 1,
+                    racha = false,
+                    puntuacion = if(it.puntuacion >= 2) it.puntuacion - 2 else it.puntuacion,
                     ultimaJugada = Jugada(TipoJugada.FALLO, movimiento),
                 )
             }

@@ -29,6 +29,8 @@ data class TableroUiState(
     val ganada: Boolean = false,
     val ultimaJugada: Jugada? = null,
     val fallos: Int = 0,
+    val racha: Boolean = false,
+    val puntuacion: Int = 0,
 ) {
     // Propiedades calculadas (3C.1 §2.1): se sacan de las cartas, así no se pueden desincronizar.
     val parejasTotales: Int get() = cartas.size / 2

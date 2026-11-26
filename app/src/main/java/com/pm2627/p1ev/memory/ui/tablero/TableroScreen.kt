@@ -157,7 +157,7 @@ fun TableroContent(
         ) {
             Marcadores(estado)
             Text(
-                "Fallos ${estado.fallos}",
+                "Fallos ${estado.fallos} . Puntuación ${estado.puntuacion}",
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -176,6 +176,7 @@ private fun Marcadores(estado: TableroUiState) {
         Marcador("Movimientos", "${estado.movimientos}", Modifier.weight(1f))
         Marcador("Parejas", "${estado.parejasEncontradas}/${estado.parejasTotales}", Modifier.weight(1f))
         Marcador("Tiempo", formatearTiempo(estado.segundos), Modifier.weight(1f))
+
     }
 }
 
